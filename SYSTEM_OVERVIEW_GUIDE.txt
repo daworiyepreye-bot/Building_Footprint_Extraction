@@ -1,0 +1,52 @@
+=========================================================================
+COHORT SYSTEM ARCHITECTURE & INTEGRATION FLOW: BAYELSA STATE CASE STUDY
+=========================================================================
+
+This document outlines how the five collaborative sub-systems work together 
+to form the complete digital addressing, verification, and routing platform.
+
+-------------------------------------------------------------------------
+OVERALL PIPELINE FLOW (STUDENT 1 TO STUDENT 5)
+-------------------------------------------------------------------------
+
+1. SATELLITE IMAGERY & DEEP LEARNING (Student 1 - Your Role)
+   - Inputs: High-resolution satellite tiles (VRT/TIF) for Yenagoa and Amassoma.
+   - Action: Processes imagery through a custom-trained YOLOv8-Segmentation
+     model utilizing specific aerial data augmentations (rotation, flip, HSV jitter).
+   - Outputs: Raw segmentation masks are post-processed via contour extraction 
+     (OpenCV) and coordinate projection (Rasterio Affine translation).
+   - Hand-off (Master Data Contract 1): Standardized GeoJSON FeatureCollection
+     with validated closed polygon ring geometries, unique building IDs, and
+     extraction confidence scores.
+
+2. SPATIAL GRIDDING & ADDRESS GENERATION (Student 2)
+   - Inputs: GeoJSON footprints received from Student 1.
+   - Action: Computes the geographic center (centroid) of each building polygon.
+     Maps these coordinates into spatial grid structures (like Uber's H3 Hexagonal 
+     system or Google's S2).
+   - Outputs: Generates a unique, hierarchical, human-readable Digital Address 
+     for each structure (e.g., 'BY-YEN-4A2').
+   - Database Handoff: Writes records containing the address, centroid, original 
+     boundary polygon, verification status, and timestamp into a Shared Database.
+
+3. MOBILE FIELD VERIFICATION SYSTEM (Student 3)
+   - Inputs: Digital addresses and coordinate pairs queried from the Database.
+   - Action: Mobile application loaded with GIS capabilities allows field workers 
+     to navigate to the physical building structures in Yenagoa/Amassoma.
+   - Outputs: Performs physical audits. Updates attributes (verified/unverified, 
+     building usage, ground-truth photos), and posts results back to the DB API.
+
+4. OPTIMAL ROUTING ENGINE (Student 4)
+   - Inputs: Origin/Destination request containing two generated Digital Addresses.
+   - Action: Maps addresses to precise GPS coordinates, loads local road network 
+     graphs, and applies routing algorithms (such as A*) to resolve paths.
+   - Outputs (Master Data Contract 3): Formats the resolved navigation path 
+     exclusively as a GeoJSON LineString to prevent rendering failures.
+
+5. SYSTEM PORTAL & DASHBOARD FRONTEND (Student 5)
+   - Inputs: System database logs, routing results, and verification updates.
+   - Action: Orchestrates and serves the central web dashboard interface.
+   - Outputs: Displays interactive analytical maps (using Folium/Leaflet), tracks 
+     project progression metrics, and facilitates user-facing search queries.
+
+=========================================================================
