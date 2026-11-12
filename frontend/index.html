@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bayelsa State - AI Building Footprint Extraction Portal (Student 1)</title>
+  
+  <!-- Tailwind CSS & Leaflet -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  
+  <!-- Custom Stylesheet -->
+  <link rel="stylesheet" href="/static/style.css?v=2">
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col font-sans">
+
+  <!-- Top Navigation Header -->
+  <header class="border-b border-slate-800 bg-slate-900/90 backdrop-blur sticky top-0 z-50 px-6 py-3.5 shadow-md">
+    <div class="max-w-7xl mx-auto flex flex-col md:flex-row md:items-center justify-between gap-3">
+      <div class="flex items-center space-x-3.5">
+        <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-blue-700 to-indigo-500 flex items-center justify-center font-extrabold text-white text-base shadow-lg shadow-blue-600/30">
+          S1
+        </div>
+        <div>
+          <div class="flex items-center space-x-2">
+            <h1 class="text-lg font-bold tracking-tight text-white">AI Building Footprint Extraction</h1>
+            <span class="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-blue-500/20 text-blue-300 border border-blue-500/30">Student 1</span>
+          </div>
+          <p class="text-xs text-slate-400">Bayelsa State Digital Addressing & Routing Mega-Project | Supervisor: Dr. I. P. Thompson</p>
+        </div>
+      </div>
+
+      <div class="flex items-center space-x-3">
+        <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-emerald-950 text-emerald-300 border border-emerald-800/80">
+          <span class="w-2 h-2 rounded-full bg-emerald-400 mr-2 pulse-badge"></span>
+          Master Data Contract 1 Active
+        </span>
+        <span class="text-xs text-slate-500 hidden sm:inline">WGS84 EPSG:4326</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Application Body -->
+  <main class="max-w-7xl mx-auto px-6 py-6 flex-1 w-full">
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      
+      <!-- LEFT COLUMN: Ingestion Controls & Parameters (5 cols) -->
+      <div class="lg:col-span-5 space-y-6">
+
+        <!-- Upload & Settings Panel -->
+        <div class="glass-panel p-5 space-y-5">
+          <div class="border-b border-slate-700/60 pb-3">
+            <h2 class="text-base font-semibold text-white flex items-center justify-between">
+              <span>1. Ingest Satellite Tile (.TIF)</span>
+              <span class="text-xs font-normal text-slate-400">GeoTIFF / VRT</span>
+            </h2>
+            <p class="text-xs text-slate-400 mt-1">Upload an aerial or satellite raster covering Yenagoa or Amassoma.</p>
+          </div>
+
+          <!-- Dropzone -->
+          <div id="dropzone" class="dropzone rounded-xl p-5 text-center cursor-pointer">
+            <input type="file" id="fileInput" accept=".tif,.tiff,.geotiff,.vrt,.png,.jpg,.jpeg,.bmp" class="hidden">
+            <div class="space-y-2">
+              <div class="w-12 h-12 mx-auto rounded-full bg-blue-500/10 flex items-center justify-center text-blue-400">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path>
+                </svg>
+              </div>
+              <div class="text-xs text-slate-200">
+                <span class="font-semibold text-blue-400 hover:underline">Click to browse</span> or drag and drop raster tile
+              </div>
+              <p class="text-[11px] text-slate-400">GeoTIFF (.tif / .tiff), VRT, PNG, JPG satellite imagery</p>
+            </div>
+            <div id="fileInfo" class="mt-3 text-xs p-2 rounded bg-slate-900/80 border border-slate-700/80 hidden"></div>
+          </div>
+
+          <!-- Pipeline Parameters -->
+          <div class="space-y-4 pt-2">
+            <div>
+              <div class="flex justify-between text-xs mb-1.5">
+                <label for="confSlider" class="text-slate-300 font-medium">Detection Confidence Threshold</label>
+                <span id="confVal" class="text-blue-400 font-mono font-semibold">0.25</span>
+              </div>
+              <input type="range" id="confSlider" min="0.10" max="0.95" step="0.05" value="0.25" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500">
+              <span class="text-[10px] text-slate-500">Filters false-positive ground clutter and water reflections</span>
+            </div>
+
+            <div>
+              <div class="flex justify-between text-xs mb-1.5">
+                <label for="tolSlider" class="text-slate-300 font-medium">Douglas-Peucker Simplification</label>
+                <span id="tolVal" class="text-blue-400 font-mono font-semibold">0.000010</span>
+              </div>
+              <input type="range" id="tolSlider" min="0.000000" max="0.000050" step="0.000005" value="0.000010" class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-blue-500">
+              <span class="text-[10px] text-slate-500">Removes jagged staircase pixel edges for clean building footprints</span>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="space-y-2 pt-2">
+            <button id="extractBtn" class="w-full bg-blue-600 hover:bg-blue-500 active:scale-[0.99] text-white text-xs font-semibold py-3 px-4 rounded-lg transition duration-200 shadow-lg shadow-blue-600/30 flex items-center justify-center space-x-2">
+              <svg id="btnSpinner" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white hidden" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              <span id="btnText">Extract Rooftops & Generate GeoJSON</span>
+            </button>
+
+            <div class="grid grid-cols-2 gap-2">
+              <button id="sampleAmassomaBtn" type="button" class="bg-indigo-900/40 hover:bg-indigo-900/70 text-indigo-200 text-xs font-medium py-2.5 px-3 rounded-lg transition border border-indigo-700/60 flex items-center justify-center space-x-1">
+                <span>📍 Test Amassoma (NDU)</span>
+              </button>
+              <button id="sampleYenagoaBtn" type="button" class="bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium py-2.5 px-3 rounded-lg transition border border-slate-700 flex items-center justify-center space-x-1">
+                <span>📍 Test Yenagoa</span>
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Extraction Metrics & Audit Summary -->
+        <div id="metricsPanel" class="glass-panel p-5 space-y-4 hidden">
+          <div class="flex items-center justify-between border-b border-slate-700/60 pb-3">
+            <h2 class="text-base font-semibold text-white">2. Pipeline Metrics</h2>
+            <div id="contractBadge"></div>
+          </div>
+
+          <div class="grid grid-cols-3 gap-3 text-center">
+            <div class="bg-slate-900/70 p-3 rounded-lg border border-slate-800">
+              <div class="text-xl font-bold text-blue-400" id="statBuildings">0</div>
+              <div class="text-[11px] text-slate-400 mt-0.5">Rooftops</div>
+            </div>
+            <div class="bg-slate-900/70 p-3 rounded-lg border border-slate-800">
+              <div class="text-xl font-bold text-emerald-400" id="statAvgConf">0.0</div>
+              <div class="text-[11px] text-slate-400 mt-0.5">Mean Conf.</div>
+            </div>
+            <div class="bg-slate-900/70 p-3 rounded-lg border border-slate-800">
+              <div class="text-xl font-bold text-indigo-400" id="statTime">0.0s</div>
+              <div class="text-[11px] text-slate-400 mt-0.5">Latency</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- RIGHT COLUMN: Output Workspace & GIS Map (7 cols) -->
+      <div class="lg:col-span-7 space-y-4">
+        
+        <!-- Tab Navigation Bar -->
+        <div class="glass-panel p-1.5 flex items-center justify-between">
+          <div class="flex space-x-1">
+            <button data-tab="map" class="px-3.5 py-1.5 rounded-md text-xs font-medium bg-blue-600 text-white transition">
+              Interactive GIS Map
+            </button>
+            <button data-tab="json" class="px-3.5 py-1.5 rounded-md text-xs font-medium text-slate-400 hover:text-slate-200 transition">
+              GeoJSON Inspector
+            </button>
+            <button data-tab="contract" class="px-3.5 py-1.5 rounded-md text-xs font-medium text-slate-400 hover:text-slate-200 transition">
+              Contract 1 Handoff Audit
+            </button>
+          </div>
+
+          <span class="text-[11px] text-slate-400 font-mono px-3 hidden sm:inline" id="mapStatus">
+            Ready
+          </span>
+        </div>
+
+        <!-- TAB 1: Leaflet Interactive Map -->
+        <div id="tab-map" class="tab-content glass-panel p-4 space-y-3">
+          <div id="map"></div>
+
+          <!-- Map Legend and Controls Info -->
+          <div class="flex flex-wrap items-center justify-between gap-3 text-xs text-slate-400 pt-1 px-1">
+            <div class="flex items-center space-x-5">
+              <div class="flex items-center space-x-2">
+                <span class="w-3.5 h-3.5 rounded bg-red-600 border border-red-400 opacity-80"></span>
+                <span>Detected Rooftop Footprints</span>
+              </div>
+              <div class="flex items-center space-x-2">
+                <span class="w-3.5 h-3.5 rounded border border-blue-400 bg-blue-500/20"></span>
+                <span>Closed Vector Geometry</span>
+              </div>
+            </div>
+            <div class="text-[11px] text-slate-500">
+              Click any building on map for metadata
+            </div>
+          </div>
+        </div>
+
+        <!-- TAB 2: GeoJSON Code Inspector -->
+        <div id="tab-json" class="tab-content glass-panel p-4 space-y-3 hidden">
+          <div class="flex items-center justify-between border-b border-slate-700/60 pb-2">
+            <span class="text-xs text-slate-400 font-mono">student_1_building_footprints.geojson</span>
+            <button id="copyJsonBtn" class="px-2.5 py-1 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs border border-slate-700 transition">
+              Copy to Clipboard
+            </button>
+          </div>
+          <div class="bg-slate-950 p-4 rounded-lg border border-slate-800/80 json-container text-slate-300">
+            <pre><code id="jsonCode">// GeoJSON output will appear here after running extraction...</code></pre>
+          </div>
+        </div>
+
+        <!-- TAB 3: Contract 1 Handoff Audit -->
+        <div id="tab-contract" class="tab-content glass-panel p-5 space-y-4 hidden">
+          <div class="border-b border-slate-700/60 pb-3">
+            <h3 class="text-sm font-semibold text-white">Master Data Contract 1 Compliance Report</h3>
+            <p class="text-xs text-slate-400 mt-0.5">Enforces hard requirements between Student 1 (Extraction) and Student 2 (Addressing).</p>
+          </div>
+
+          <div id="contractAuditList" class="space-y-2.5">
+            <div class="p-4 rounded-lg bg-slate-900/60 border border-slate-800 text-xs text-slate-400 text-center">
+              Awaiting extraction execution to evaluate contract checklist...
+            </div>
+          </div>
+        </div>
+
+        <!-- Bottom Export & Handoff Toolbar -->
+        <div id="exportToolbar" class="glass-panel p-4 flex flex-col sm:flex-row items-center justify-between gap-3 hidden">
+          <div class="text-xs text-slate-400 flex items-center space-x-2">
+            <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+            <span>Handoff Ready: <strong>Student 2 (Addressing Engine)</strong></span>
+          </div>
+
+          <div class="flex items-center space-x-2.5 w-full sm:w-auto">
+            <a href="/api/download/geojson" class="flex-1 sm:flex-none inline-flex items-center justify-center space-x-1.5 px-4 py-2.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-md shadow-emerald-600/20 transition">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+              </svg>
+              <span>Download GeoJSON</span>
+            </a>
+
+            <a href="/api/download/map" target="_blank" class="flex-1 sm:flex-none inline-flex items-center justify-center space-x-1.5 px-4 py-2.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-medium border border-slate-700 transition">
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14"></path>
+              </svg>
+              <span>Open Standalone Map</span>
+            </a>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </main>
+
+  <!-- Toast Notification Popup -->
+  <div id="toast" class="fixed bottom-5 right-5 z-50 px-4 py-3 rounded-lg shadow-2xl flex items-center space-x-2 text-xs font-medium border transition-all duration-300 transform translate-y-20 opacity-0">
+    <span id="toastMsg">Notification message</span>
+  </div>
+
+  <!-- Client Application Script -->
+  <script src="/static/app.js?v=2"></script>
+</body>
+</html>
